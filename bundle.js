@@ -323,10 +323,15 @@ var Level1 = function (_MapGen) {
 						case 0:
 						case 1:
 							map_space._map[x][y] = new _Room2.default(x, y, map_space, map_space._map[x][y].neighbours, tile.type);
-						//console.log(tile);
 					}
 				}
 			}
+			for (var x = 0; x < map_space._map.length; x++) {
+				for (var y = 0; y < map_space._map[x].length; y++) {
+					map_space._map[x][y].convertNeighbours(map_space._map);
+				}
+			}
+
 			console.log(map_space);
 
 			var start = open_tiles[~ ~(Math.random() * open_tiles.length)];
@@ -624,7 +629,6 @@ var Player = function (_Character) {
 		value: function initControls(roomctx, playerctx, width) {
 			var player = this;
 			document.addEventListener('keyup', function (e) {
-				var room = player.container;
 				var keycode = e.keyCode;
 				switch (keycode) {
 					case 37:
@@ -644,17 +648,25 @@ var Player = function (_Character) {
 						player.step(Direction.south);
 						break;
 				}
-
-				//console.log('should draw');
-				room.draw(roomctx, playerctx, width);
-				player.container.draw(roomctx, playerctx, width);
+				player.vision(roomctx, playerctx, width);
 			});
+			this.vision(roomctx, playerctx, width);
 		}
 	}, {
 		key: 'draw',
 		value: function draw(ctx, width, n) {
 			ctx.fillStyle = "#00ff00";
 			ctx.fillRect(this.x * width + 1, this.y * width + 1, width - 2, width - 2);
+		}
+	}, {
+		key: 'vision',
+		value: function vision(roomctx, playerctx, width) {
+			console.log(this.container);
+			this.container.draw(roomctx, playerctx, width);
+			for (var i = 0; i < this.container.neighbours.length; i++) {
+				console.log(this.container);
+				this.container.neighbours[i].draw(roomctx, playerctx, width);
+			}
 		}
 	}]);
 
@@ -711,6 +723,7 @@ var Region = function () {
 		key: "draw",
 		value: function draw(ctx, room_ctx, player_ctx) {
 			var cell_width = 20;
+			return; // uncomment line to view entire map
 			for (var x = 0; x < this._width; x++) {
 				for (var y = 0; y < this._height; y++) {
 					var c = this._map[x][y].neighbours.length;
@@ -756,12 +769,12 @@ var Region = function () {
 				}
 			}
 
-			//Draw Rooms
-			for (var x = 0; x < this._width; x++) {
-				for (var y = 0; y < this._height; y++) {
-					this._map[x][y].draw(room_ctx, player_ctx, cell_width);
-				}
-			}
+			//Draw Rooms, actually don't, fog of war
+			/*for(var x = 0; x < this._width; x++){
+   	for(var y = 0; y < this._height; y++){
+   		this._map[x][y].draw(room_ctx, player_ctx, cell_width);
+   	}
+   }*/
 		}
 	}]);
 
@@ -771,7 +784,7 @@ var Region = function () {
 exports.default = Region;
 
 },{}],8:[function(require,module,exports){
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
 	value: true
@@ -779,7 +792,7 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _Character = require('./Character.js');
+var _Character = require("./Character.js");
 
 var _Character2 = _interopRequireDefault(_Character);
 
@@ -809,16 +822,18 @@ var Room = function () {
 		};
 
 		this.hooks = []; //includes traps
+
+		this.viewed = false;
 	}
 
 	_createClass(Room, [{
-		key: 'spawn',
+		key: "spawn",
 		value: function spawn(item) {
 			this.contents.push(item);
 			item.container = this.contents;
 		}
 	}, {
-		key: 'canAccess',
+		key: "canAccess",
 		value: function canAccess(point) {
 			for (var i = 0; i < this.neighbours.length; i++) {
 				if (this.neighbours[i].x == point.x && this.neighbours[i].y == point.y) {
@@ -828,12 +843,12 @@ var Room = function () {
 			return false;
 		}
 	}, {
-		key: 'addHook',
+		key: "addHook",
 		value: function addHook(hook, actions, characters) {
 			this.hooks.push({ hook: hook, actions: actions, characters: characters });
 		}
 	}, {
-		key: 'getHooks',
+		key: "getHooks",
 		value: function getHooks(action, character) {
 			return Array.from(this.hooks.filter(function (v) {
 				if (actions.includes(action)) {
@@ -849,14 +864,14 @@ var Room = function () {
 			});
 		}
 	}, {
-		key: 'draw',
+		key: "draw",
 		value: function draw(ctx, character_ctx, width) {
 			var char_count = 0;
 			var item_count = 0;
 
 			//Clear room
 			character_ctx.clearRect(this.x * width, this.y * width, width, width);
-			ctx.clearRect(this.x * width, this.y * width, width, width);
+			this.drawRoom(ctx, width);
 
 			for (var i = 0; i < this.contents.length; i++) {
 				if (this.contents[i] instanceof _Character2.default) {
@@ -866,13 +881,61 @@ var Room = function () {
 					this.contents[i].draw(character_ctx, width, item_count++);
 				}
 			}
-
-			this.drawRoom(ctx, width);
 		}
 	}, {
-		key: 'drawRoom',
+		key: "drawRoom",
 		value: function drawRoom(ctx, width) {
-			return false;
+			var alpha = arguments.length <= 2 || arguments[2] === undefined ? 0.5 : arguments[2];
+
+			ctx.clearRect(this.x * width, this.y * width, width, width);
+			var c = this.neighbours.length;
+
+			if (this.type) {
+				ctx.fillStyle = "#000000";
+			} else {
+				ctx.fillStyle = "#ff0000";
+			}
+			ctx.fillRect(this.x * width, this.y * width, width, width);
+
+			var walls = [1, 1, 1, 1]; //north, east, south, west
+			this.neighbours.forEach(function (v) {
+				var dx = this.x - v.x;
+				var dy = this.y - v.y;
+				if (dx !== 0) {
+					walls[dx + 2] = 0;
+				} else {
+					walls[-dy + 1] = 0;
+				}
+			}, this);
+
+			ctx.fillStyle = "#ff0000";
+			if (walls[0]) {
+				//north
+				ctx.fillRect(this.x * width, this.y * width, width, 1);
+			}
+
+			if (walls[1]) {
+				//east
+				ctx.fillRect((this.x + 1) * width, this.y * width, 1, width);
+			}
+
+			if (walls[2]) {
+				//south
+				ctx.fillRect(this.x * width, (this.y + 1) * width, width, 1);
+			}
+
+			if (walls[3]) {
+				//west
+				ctx.fillRect(this.x * width, this.y * width, 1, width);
+			}
+		}
+	}, {
+		key: "convertNeighbours",
+		value: function convertNeighbours(map) {
+			for (var i = 0; i < this.neighbours.length; i++) {
+				var n = this.neighbours[i];
+				this.neighbours[i] = map[n.x][n.y];
+			}
 		}
 	}]);
 
