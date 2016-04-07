@@ -9,13 +9,6 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var Direction = {
-	east: 'east',
-	west: 'west',
-	north: 'north',
-	south: 'south'
-};
-
 var Character = function () {
 	function Character(map) {
 		_classCallCheck(this, Character);
@@ -23,8 +16,8 @@ var Character = function () {
 		//Positional settings
 		this.x = map._start_point.x;
 		this.y = map._start_point.y;
-		this._map = map;
-		this._map._character_set.push(this);
+		this._region = map;
+		this._region._character_set.push(this);
 		this.container = map._map[this.x][this.y];
 
 		this._hooks = new Map(); //array of functions to call on action
@@ -152,7 +145,7 @@ var Character = function () {
 	}, {
 		key: 'step',
 		value: function step(direction) {
-			var target = { x: this._x, y: this._y };
+			var target = { x: this.x, y: this.y };
 			switch (direction) {
 				case Direction.east:
 					target.x++;
@@ -167,8 +160,10 @@ var Character = function () {
 					target.y++;
 					break;
 			}
-
-			moveTo(this._map[target.x][target.y]);
+			//TODO: ensure room is accesible
+			if (this.container.canAccess(target)) {
+				this.moveTo(this._region._map[target.x][target.y]);
+			}
 		}
 
 		//returns objects visible to the character (including self), or objects in a room if x, y are defined
@@ -626,11 +621,40 @@ var Player = function (_Character) {
 
 	_createClass(Player, [{
 		key: 'initControls',
-		value: function initControls() {
+		value: function initControls(roomctx, playerctx, width) {
+			var player = this;
 			document.addEventListener('keyup', function (e) {
-				var keycode = e.keyCode();
-				console.log(e);
+				var room = player.container;
+				var keycode = e.keyCode;
+				switch (keycode) {
+					case 37:
+						//left
+						player.step(Direction.west);
+						break;
+					case 38:
+						//up
+						player.step(Direction.north);
+						break;
+					case 39:
+						//right
+						player.step(Direction.east);
+						break;
+					case 40:
+						//down
+						player.step(Direction.south);
+						break;
+				}
+
+				//console.log('should draw');
+				room.draw(roomctx, playerctx, width);
+				player.container.draw(roomctx, playerctx, width);
 			});
+		}
+	}, {
+		key: 'draw',
+		value: function draw(ctx, width, n) {
+			ctx.fillStyle = "#00ff00";
+			ctx.fillRect(this.x * width + 1, this.y * width + 1, width - 2, width - 2);
 		}
 	}]);
 
@@ -731,12 +755,13 @@ var Region = function () {
 					}
 				}
 			}
+
 			//Draw Rooms
-			/*for(var x = 0; x < this._width; x++){
-   	for(var y = 0; y < this._height; y++){
-   		this._map[x][y].draw(room_ctx, player_ctx, x*cell_width, y*cell_width, cell_width);
-   	}
-   }*/
+			for (var x = 0; x < this._width; x++) {
+				for (var y = 0; y < this._height; y++) {
+					this._map[x][y].draw(room_ctx, player_ctx, cell_width);
+				}
+			}
 		}
 	}]);
 
@@ -793,6 +818,16 @@ var Room = function () {
 			item.container = this.contents;
 		}
 	}, {
+		key: 'canAccess',
+		value: function canAccess(point) {
+			for (var i = 0; i < this.neighbours.length; i++) {
+				if (this.neighbours[i].x == point.x && this.neighbours[i].y == point.y) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}, {
 		key: 'addHook',
 		value: function addHook(hook, actions, characters) {
 			this.hooks.push({ hook: hook, actions: actions, characters: characters });
@@ -815,28 +850,28 @@ var Room = function () {
 		}
 	}, {
 		key: 'draw',
-		value: function draw(ctx, character_ctx, x, y, width) {
+		value: function draw(ctx, character_ctx, width) {
 			var char_count = 0;
 			var item_count = 0;
 
 			//Clear room
-			character_ctx.clearRect(x, y, width, width);
-			ctx.clearRect(x, y, width, width);
+			character_ctx.clearRect(this.x * width, this.y * width, width, width);
+			ctx.clearRect(this.x * width, this.y * width, width, width);
 
 			for (var i = 0; i < this.contents.length; i++) {
 				if (this.contents[i] instanceof _Character2.default) {
 					// Let characters draw themselves
-					this.contents[i].draw(character_ctx, x, y, width, char_count++);
+					this.contents[i].draw(character_ctx, width, char_count++);
 				} else {
-					this.contents[i].draw(character_ctx, x, y, width, item_count++);
+					this.contents[i].draw(character_ctx, width, item_count++);
 				}
 			}
 
-			this.drawRoom(ctx, x, y, width);
+			this.drawRoom(ctx, width);
 		}
 	}, {
 		key: 'drawRoom',
-		value: function drawRoom(ctx, x, y, width) {
+		value: function drawRoom(ctx, width) {
 			return false;
 		}
 	}]);
@@ -878,7 +913,6 @@ test.moveTo(region._start_point);
 //console.log(test);
 
 window.onload = function () {
-	test.initControls();
 	var map_canvas = document.getElementById('map');
 	var map_ctx = map_canvas.getContext('2d');
 
@@ -888,6 +922,7 @@ window.onload = function () {
 	var player_canvas = document.getElementById('player');
 	var player_ctx = player_canvas.getContext('2d');
 
+	test.initControls(room_ctx, player_ctx, 20);
 	region.draw(map_ctx, room_ctx, player_ctx);
 };
 
