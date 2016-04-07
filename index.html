@@ -15,10 +15,11 @@
 
 			.game_canvas {
 				position:absolute;
-				top:10px;
-				margin:0 auto;
-				width: 800px;
-				height: 800px;
+				top: 10px;
+				left: 200px;
+				width: 400px;
+				height: 400px;
+				border: 1px solid #ff0000;
 			}
 
 			#room {
@@ -28,11 +29,58 @@
 			#player {
 				z-index:3;
 			}
+
+			#game_window {
+				position:relative;
+				width:800px;
+				margin:0 auto;
+				border-left: 2px solid #ff0000;
+				border-right: 2px solid #ff0000;
+				height:100%;
+			}
+
+			#game_output_container {
+				height:100%;
+				padding: 0 10px;
+			}
+
+			#game_output {
+				padding-top:420px;
+				color:#ccc;
+			}
+
+			#game_input {
+				position: absolute;
+				bottom:0;
+				width:100%;
+				border-top:2px solid #ff0000;
+				color: #ccc;
+			}
+
+			#game_input input {
+				border:none;
+				background-color: transparent;
+				color: #ccc;
+				width:100%;
+			}
 		</style>
 	</head>
 	<body>
-		<canvas id="map" class="game_canvas" width="800" height="800"></canvas>
-		<canvas id="room" class="game_canvas" width="800" height="800"></canvas>
-		<canvas id="player" class="game_canvas" width="800" height="800"></canvas>
+		<div id="game_window">
+			<canvas id="map" class="game_canvas" width="400" height="400"></canvas>
+			<canvas id="room" class="game_canvas" width="400" height="400"></canvas>
+			<canvas id="player" class="game_canvas" width="400" height="400"></canvas>
+			<div id="game_output_container">
+				<div id="game_output">
+					<span class="output-chunk">
+						<h3>Instructions</h3>
+						Arrow keys to move.
+					</span>
+				</div>
+			</div>
+			<div id="game_input">
+				<input id="input" type="text" />
+			</div>
+		</div>
 	</body>
 </html>

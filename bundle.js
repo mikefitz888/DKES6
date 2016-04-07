@@ -626,29 +626,51 @@ var Player = function (_Character) {
 
 	_createClass(Player, [{
 		key: 'initControls',
-		value: function initControls(roomctx, playerctx, width) {
+		value: function initControls(roomctx, playerctx, width, input) {
 			var player = this;
-			document.addEventListener('keyup', function (e) {
+			var arrows_to_input = false;
+			window.addEventListener('keypress', function (e) {
 				var keycode = e.keyCode;
-				switch (keycode) {
-					case 37:
-						//left
-						player.step(Direction.west);
-						break;
-					case 38:
-						//up
-						player.step(Direction.north);
-						break;
-					case 39:
-						//right
-						player.step(Direction.east);
-						break;
-					case 40:
-						//down
-						player.step(Direction.south);
-						break;
+				if (!arrows_to_input) {
+					switch (keycode) {
+						case 37:
+							//left
+							player.step(Direction.west);
+							break;
+						case 38:
+							//up
+							player.step(Direction.north);
+							break;
+						case 39:
+							//right
+							player.step(Direction.east);
+							break;
+						case 40:
+							//down
+							player.step(Direction.south);
+							break;
+						case 9:
+							//tab
+							arrows_to_input = true;
+							return false;
+					}
+					player.vision(roomctx, playerctx, width);
+				} else {
+					if (keycode == 9) {
+						//tab
+						arrows_to_input = false;
+						return false;
+					}
 				}
-				player.vision(roomctx, playerctx, width);
+
+				if (keycode == 27) {
+					//escape
+					input.value = '';
+				}
+
+				if (keycode == 13) {//return
+					// submit command
+				}
 			});
 			this.vision(roomctx, playerctx, width);
 		}
@@ -661,12 +683,8 @@ var Player = function (_Character) {
 	}, {
 		key: 'vision',
 		value: function vision(roomctx, playerctx, width) {
-			console.log(this.container);
 			this.container.draw(roomctx, playerctx, width);
-			for (var i = 0; i < this.container.neighbours.length; i++) {
-				console.log(this.container);
-				this.container.neighbours[i].draw(roomctx, playerctx, width);
-			}
+			this.container.drawNeighbours(roomctx, playerctx, width, 1);
 		}
 	}]);
 
@@ -823,7 +841,7 @@ var Room = function () {
 
 		this.hooks = []; //includes traps
 
-		this.viewed = false;
+		this.drawn = false;
 	}
 
 	_createClass(Room, [{
@@ -871,7 +889,9 @@ var Room = function () {
 
 			//Clear room
 			character_ctx.clearRect(this.x * width, this.y * width, width, width);
-			this.drawRoom(ctx, width);
+			if (!this.drawn) {
+				this.drawRoom(ctx, width);
+			}
 
 			for (var i = 0; i < this.contents.length; i++) {
 				if (this.contents[i] instanceof _Character2.default) {
@@ -883,10 +903,24 @@ var Room = function () {
 			}
 		}
 	}, {
+		key: "drawNeighbours",
+		value: function drawNeighbours(ctx, character_ctx, width) {
+			var recursion_level = arguments.length <= 3 || arguments[3] === undefined ? 0 : arguments[3];
+			var exclude = arguments.length <= 4 || arguments[4] === undefined ? null : arguments[4];
+
+			var neighbours = this._map.neighbours(this); //includes walls
+			for (var i = 0; i < neighbours.length; i++) {
+				if (neighbours[i] !== exclude) {
+					neighbours[i].draw(ctx, character_ctx, width);
+					if (recursion_level) {
+						neighbours[i].drawNeighbours(ctx, character_ctx, width, recursion_level - 1, this);
+					}
+				}
+			}
+		}
+	}, {
 		key: "drawRoom",
 		value: function drawRoom(ctx, width) {
-			var alpha = arguments.length <= 2 || arguments[2] === undefined ? 0.5 : arguments[2];
-
 			ctx.clearRect(this.x * width, this.y * width, width, width);
 			var c = this.neighbours.length;
 
@@ -970,12 +1004,19 @@ var region = new _Region2.default(20, 20, _Level2.default.generateMap);
 //console.log(region);
 var test = new _Player2.default(region);
 
-//console.log(test);
-
 test.moveTo(region._start_point);
 //console.log(test);
 
 window.onload = function () {
+	var output = document.getElementById('game_output');
+	window['output'] = function (html) {
+		var text = document.createTextNode(html);
+		var chunk = document.createElement('span');
+		chunk.className = 'output-chunk';
+		chunk.appendChild(text);
+		output.appendChild(chunk);
+	};
+
 	var map_canvas = document.getElementById('map');
 	var map_ctx = map_canvas.getContext('2d');
 
@@ -985,7 +1026,7 @@ window.onload = function () {
 	var player_canvas = document.getElementById('player');
 	var player_ctx = player_canvas.getContext('2d');
 
-	test.initControls(room_ctx, player_ctx, 20);
+	test.initControls(room_ctx, player_ctx, 20, document.getElementById('input'));
 	region.draw(map_ctx, room_ctx, player_ctx);
 };
 
