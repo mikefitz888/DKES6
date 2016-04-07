@@ -222,6 +222,11 @@ var Character = function () {
 			//No action, allows hooks to run with no extra functionality
 			//Default move for AI
 		}
+	}, {
+		key: 'draw',
+		value: function draw(ctx, x, y, width, n) {
+			return false;
+		}
 	}]);
 
 	return Character;
@@ -680,7 +685,7 @@ var Region = function () {
 		}
 	}, {
 		key: "draw",
-		value: function draw(ctx) {
+		value: function draw(ctx, room_ctx, player_ctx) {
 			var cell_width = 20;
 			for (var x = 0; x < this._width; x++) {
 				for (var y = 0; y < this._height; y++) {
@@ -726,6 +731,12 @@ var Region = function () {
 					}
 				}
 			}
+			//Draw Rooms
+			/*for(var x = 0; x < this._width; x++){
+   	for(var y = 0; y < this._height; y++){
+   		this._map[x][y].draw(room_ctx, player_ctx, x*cell_width, y*cell_width, cell_width);
+   	}
+   }*/
 		}
 	}]);
 
@@ -735,13 +746,19 @@ var Region = function () {
 exports.default = Region;
 
 },{}],8:[function(require,module,exports){
-"use strict";
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _Character = require('./Character.js');
+
+var _Character2 = _interopRequireDefault(_Character);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -770,18 +787,18 @@ var Room = function () {
 	}
 
 	_createClass(Room, [{
-		key: "spawn",
+		key: 'spawn',
 		value: function spawn(item) {
 			this.contents.push(item);
 			item.container = this.contents;
 		}
 	}, {
-		key: "addHook",
+		key: 'addHook',
 		value: function addHook(hook, actions, characters) {
 			this.hooks.push({ hook: hook, actions: actions, characters: characters });
 		}
 	}, {
-		key: "getHooks",
+		key: 'getHooks',
 		value: function getHooks(action, character) {
 			return Array.from(this.hooks.filter(function (v) {
 				if (actions.includes(action)) {
@@ -796,6 +813,32 @@ var Room = function () {
 				return v.hook;
 			});
 		}
+	}, {
+		key: 'draw',
+		value: function draw(ctx, character_ctx, x, y, width) {
+			var char_count = 0;
+			var item_count = 0;
+
+			//Clear room
+			character_ctx.clearRect(x, y, width, width);
+			ctx.clearRect(x, y, width, width);
+
+			for (var i = 0; i < this.contents.length; i++) {
+				if (this.contents[i] instanceof _Character2.default) {
+					// Let characters draw themselves
+					this.contents[i].draw(character_ctx, x, y, width, char_count++);
+				} else {
+					this.contents[i].draw(character_ctx, x, y, width, item_count++);
+				}
+			}
+
+			this.drawRoom(ctx, x, y, width);
+		}
+	}, {
+		key: 'drawRoom',
+		value: function drawRoom(ctx, x, y, width) {
+			return false;
+		}
 	}]);
 
 	return Room;
@@ -803,7 +846,7 @@ var Room = function () {
 
 exports.default = Room;
 
-},{}],9:[function(require,module,exports){
+},{"./Character.js":1}],9:[function(require,module,exports){
 'use strict';
 
 require('babel-polyfill');
@@ -836,10 +879,16 @@ test.moveTo(region._start_point);
 
 window.onload = function () {
 	test.initControls();
-	var canvas = document.getElementById('map');
-	var ctx = canvas.getContext('2d');
+	var map_canvas = document.getElementById('map');
+	var map_ctx = map_canvas.getContext('2d');
 
-	region.draw(ctx);
+	var room_canvas = document.getElementById('room');
+	var room_ctx = room_canvas.getContext('2d');
+
+	var player_canvas = document.getElementById('player');
+	var player_ctx = player_canvas.getContext('2d');
+
+	region.draw(map_ctx, room_ctx, player_ctx);
 };
 
 },{"./Mapgen/Level1.js":3,"./Player.js":6,"./Region.js":7,"babel-polyfill":10}],10:[function(require,module,exports){

@@ -13,13 +13,26 @@
 				padding:0;
 			}
 
-			#map {
+			.game_canvas {
+				position:absolute;
+				top:10px;
+				margin:0 auto;
 				width: 800px;
 				height: 800px;
+			}
+
+			#room {
+				z-index:2;
+			}
+
+			#player {
+				z-index:3;
 			}
 		</style>
 	</head>
 	<body>
-		<canvas id="map" width="800" height="800"></canvas>
+		<canvas id="map" class="game_canvas" width="800" height="800"></canvas>
+		<canvas id="room" class="game_canvas" width="800" height="800"></canvas>
+		<canvas id="player" class="game_canvas" width="800" height="800"></canvas>
 	</body>
 </html>
