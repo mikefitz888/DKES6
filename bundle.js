@@ -276,7 +276,10 @@ characters['Test'] = function (_NPC) {
 	function Test(map) {
 		_classCallCheck(this, Test);
 
-		return _possibleConstructorReturn(this, Object.getPrototypeOf(Test).call(this, map));
+		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(Test).call(this, map));
+
+		_this.name = 'Test Character';
+		return _this;
 	}
 
 	return Test;
@@ -289,7 +292,7 @@ function CharacterFactory(type) {
 }
 
 },{"../NPC.js":9}],3:[function(require,module,exports){
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
 	value: true
@@ -310,7 +313,7 @@ var Controller = function () {
 	}
 
 	_createClass(Controller, [{
-		key: 'getArrowKeyMap',
+		key: "getArrowKeyMap",
 		value: function getArrowKeyMap() {
 			var keymap = new Map();
 			keymap.set(37, Direction.west);
@@ -320,7 +323,7 @@ var Controller = function () {
 			return keymap;
 		}
 	}, {
-		key: 'keydown',
+		key: "keydown",
 		value: function keydown(e) {
 			var keycode = e.keyCode;
 			console.log(this);
@@ -328,6 +331,10 @@ var Controller = function () {
 			if (this.arrowKeyMap.has(keycode)) {
 				this.target.step(this.arrowKeyMap.get(keycode));
 				this.view.drawPlayerVision(this.target);
+				var items = Array.from(this.target.container.contents, function (v) {
+					return v.name;
+				});
+				output("<hr />You move " + this.arrowKeyMap.get(keycode) + ".<br />You can see: " + items.join(", "));
 			}
 		}
 	}]);
@@ -1345,6 +1352,7 @@ window.onload = function () {
 		chunk.className = 'output-chunk';
 		chunk.innerHTML = html;
 		output.appendChild(chunk);
+		output.scrollTop = output.scrollHeight;
 	};
 
 	var map_canvas = document.getElementById('map');
