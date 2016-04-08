@@ -872,7 +872,7 @@ var Player = function (_Character) {
 			var item_name = Array.from(arguments).join(" ");
 			var items = this.look();
 			var pass = items.filter(function (v) {
-				return v.name == item_name;
+				return v.name.toLowerCase() == item_name.toLowerCase();
 			});
 			if (pass.length) {
 				pass[0].moveTo(this);
