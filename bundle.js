@@ -1004,6 +1004,8 @@ var Region = function () {
 		key: "draw",
 		value: function draw(ctx, room_ctx, player_ctx) {
 			var cell_width = 32;
+			ctx.fillStyle = '#000000';
+			ctx.fillRect(0, 0, 640, 640);
 			return; // uncomment line to view entire map
 			for (var x = 0; x < this._width; x++) {
 				for (var y = 0; y < this._height; y++) {
@@ -1277,10 +1279,10 @@ console.log(sword);
 window.onload = function () {
 	var output = document.getElementById('game_output');
 	window['output'] = function (html) {
-		var text = document.createTextNode(html);
+		//var text = document.createTextNode(html);
 		var chunk = document.createElement('span');
 		chunk.className = 'output-chunk';
-		chunk.appendChild(text);
+		chunk.innerHTML = html;
 		output.appendChild(chunk);
 	};
 
