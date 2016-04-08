@@ -50,7 +50,7 @@ var Character = function (_GObject) {
 		};
 
 		_this.health = 100;
-		_this._inventory = [];
+		_this.contents = [];
 		_this.attackable = true;
 		_this.stuck = false; //if stuck, references array of causes
 		return _this;
@@ -77,7 +77,6 @@ var Character = function (_GObject) {
 			var arg_array = arguments.length <= 1 || arguments[1] === undefined ? [] : arguments[1];
 
 			if (this.actionMap.has(action_t)) {
-				console.log('has action');
 				var action = this.actionMap.get(action_t);
 				var hooks = this._hooks.get(action) || [];
 				var toRun = this[action];
@@ -847,7 +846,8 @@ var Player = function (_Character) {
 
 		_this.actionMap.set('look', 'playerLook');
 		_this.actionMap.set('step', 'playerStep');
-		_this.name = 'You';
+		_this.actionMap.set('take', 'playerTake');
+		_this.name = 'Yourself';
 		return _this;
 	}
 
@@ -863,7 +863,21 @@ var Player = function (_Character) {
 		key: 'playerStep',
 		value: function playerStep(direction) {
 			if (this.step(direction)) {
-				output('You step to the ' + direction);
+				output('<hr><br/>You step to the ' + direction);
+			}
+		}
+	}, {
+		key: 'playerTake',
+		value: function playerTake() {
+			var item_name = Array.from(arguments).join(" ");
+			var items = this.look();
+			var pass = items.filter(function (v) {
+				return v.name == item_name;
+			});
+			if (pass.length) {
+				pass[0].moveTo(this);
+				output("You take the " + pass[0].name);
+				console.log(this.contents);
 			}
 		}
 	}, {
